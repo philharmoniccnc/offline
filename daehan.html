@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>대한음악사 × 아로필 위탁판매 분석</title>
+<style>
+  :root {
+    --bg: #faf8f5;
+    --surface: #ffffff;
+    --surface-2: #f4f1ec;
+    --line: #e5e0d8;
+    --line-soft: #ede8e0;
+    --text: #2a2520;
+    --text-dim: #8a8378;
+    --text-mid: #5c554d;
+    --accent: #a0763f;
+    --accent-soft: #f0e4d2;
+    --danger: #c4543e;
+    --warn: #c89a3d;
+    --ok: #5c8a5a;
+    --navy: #3a4a5c;
+    --perfume: #8c7a6b;
+    --diffuser: #6e5a48;
+    --sachet: #b08968;
+    --tester: #c4b0a0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 14px; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'SF Mono', 'Consolas', 'Menlo', 'Malgun Gothic', monospace;
+    padding: 24px;
+    min-height: 100vh;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  header {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 20px;
+    margin-bottom: 28px;
+  }
+  h1 { font-size: 1.5rem; font-weight: 600; letter-spacing: 0.02em; }
+  h1 span { color: var(--accent); font-weight: 400; }
+  .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-top: 4px; }
+
+  .section-title {
+    font-size: 0.8rem;
+    color: var(--text-mid);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin: 32px 0 14px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+    font-weight: 600;
+  }
+
+  /* Summary cards */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 16px 18px;
+    position: relative;
+    box-shadow: 0 1px 3px rgba(42, 37, 32, 0.04);
+  }
+  .summary-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+  }
+  .summary-card.perfume::before { background: var(--perfume); }
+  .summary-card.diffuser::before { background: var(--diffuser); }
+  .summary-card.sachet::before { background: var(--sachet); }
+  .summary-card.total::before { background: var(--accent); }
+  .summary-label {
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+  .summary-qty {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .summary-qty .unit {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    font-weight: 400;
+    margin-left: 2px;
+  }
+  .summary-value {
+    font-size: 0.85rem;
+    color: var(--accent);
+    margin-top: 4px;
+    font-weight: 500;
+  }
+  .summary-sub {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .summary-card.total .summary-qty { color: var(--accent); }
+
+  /* Monthly chart */
+  .chart-box {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(42, 37, 32, 0.04);
+  }
+  .chart-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+  .chart-legend {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    font-size: 0.75rem;
+    color: var(--text-mid);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-swatch {
+    width: 10px;
+    height: 10px;
+    display: inline-block;
+  }
+  .chart-canvas {
+    position: relative;
+    height: 280px;
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    padding: 20px 0 40px 40px;
+    border-left: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .chart-bar-stack {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: stretch;
+    min-width: 40px;
+  }
+  .chart-bar {
+    width: 100%;
+    transition: opacity 0.2s;
+    position: relative;
+  }
+  .chart-bar:hover { opacity: 0.8; }
+  .chart-bar-label {
+    position: absolute;
+    bottom: -32px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .chart-bar-total {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.68rem;
+    color: var(--text-mid);
+    white-space: nowrap;
+    font-weight: 600;
+  }
+  .chart-y-axis {
+    position: absolute;
+    left: 0;
+    top: 20px;
+    bottom: 40px;
+    width: 40px;
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: space-between;
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    text-align: right;
+    padding-right: 6px;
+  }
+
+  /* Monthly table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.83rem;
+  }
+  thead { background: var(--surface-2); }
+  th {
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-mid);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--line);
+  }
+  th.num, td.num { text-align: right; }
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  tr:hover td { background: var(--surface-2); }
+  .month-cell { font-weight: 600; color: var(--text); }
+  .qty-cell { color: var(--text); }
+  .qty-cell.zero { color: var(--text-dim); }
+  .value-cell { color: var(--accent); font-weight: 500; }
+  .subtotal-row { background: var(--surface-2); font-weight: 600; }
+  .subtotal-row td { border-top: 2px solid var(--accent); border-bottom: none; color: var(--text); }
+
+  .section-container {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(42, 37, 32, 0.04);
+  }
+  .section-header {
+    padding: 14px 18px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line);
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-header .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  /* Variant cards grid */
+  .variant-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    padding: 18px;
+  }
+  .variant-card {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    padding: 12px 14px;
+  }
+  .variant-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .variant-qty {
+    font-size: 1.1rem;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .variant-share {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  /* Insight box */
+  .insight-box {
+    background: var(--navy);
+    color: #fff;
+    padding: 22px 26px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .insight-box::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+  }
+  .insight-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    opacity: 0.7;
+    margin-bottom: 8px;
+  }
+  .insight-text {
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+  .insight-text strong { color: var(--accent); font-weight: 600; }
+
+  /* Price sanity block */
+  .price-block {
+    background: var(--surface);
+    border: 2px solid var(--accent);
+    padding: 20px 22px;
+    margin-bottom: 24px;
+  }
+  .price-block h3 {
+    font-size: 0.85rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 12px;
+  }
+  .price-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-top: 12px;
+  }
+  .price-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .price-item .plabel {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .price-item .pvalue {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .price-item .pvalue.highlight {
+    color: var(--accent);
+  }
+
+  footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>대한음악사 × 아로필 <span>위탁판매 분석</span></h1>
+  <div class="subtitle">2025.05 ~ 2026.03 · 11개월 실거래 데이터 · 공급가는 정가의 60%</div>
+</header>
+
+<!-- Key metric insight -->
+<div class="insight-box">
+  <div class="insight-label">핵심 관찰 · Key Insight</div>
+  <div class="insight-text">
+    11개월간 <strong>향수 30개</strong>가 정가 88,000원으로 판매됨. 월 평균 <strong>2.7개</strong>, 단일 매장에서 프로모션/할인 없이. 이 숫자는 "가격이 시장에서 거부당하지 않는다"는 증거이며, 동시에 "단일 매장에서는 월 3~4개가 자연 상한"임을 시사.
+  </div>
+</div>
+
+<!-- Summary cards -->
+<div class="section-title">📊 11개월 총 집계</div>
+<div class="summary-grid" id="summaryGrid"></div>
+
+<!-- Price sanity check -->
+<div class="price-block">
+  <h3>💰 가격 x 공급가 구조 검증</h3>
+  <div class="price-grid">
+    <div class="price-item">
+      <div class="plabel">향수 소비자가</div>
+      <div class="pvalue highlight">88,000원</div>
+    </div>
+    <div class="price-item">
+      <div class="plabel">공급가 (60%)</div>
+      <div class="pvalue">52,800원</div>
+    </div>
+    <div class="price-item">
+      <div class="plabel">향수 원가</div>
+      <div class="pvalue">10,000원</div>
+    </div>
+    <div class="price-item">
+      <div class="plabel">공급가 기준 마진</div>
+      <div class="pvalue highlight">42,800원 / 81%</div>
+    </div>
+  </div>
+</div>
+
+<!-- Monthly stacked bar chart -->
+<div class="chart-box">
+  <div class="chart-title">월별 판매 공급가 (누적 막대, 원)</div>
+  <div class="chart-legend">
+    <div class="legend-item"><span class="legend-swatch" style="background: var(--perfume);"></span>향수</div>
+    <div class="legend-item"><span class="legend-swatch" style="background: var(--diffuser);"></span>디퓨저</div>
+    <div class="legend-item"><span class="legend-swatch" style="background: var(--sachet);"></span>사쉐</div>
+    <div class="legend-item"><span class="legend-swatch" style="background: var(--tester);"></span>시향지</div>
+  </div>
+  <div id="chartCanvas" class="chart-canvas"></div>
+</div>
+
+<!-- Monthly table -->
+<div class="section-title">📅 월별 판매 내역</div>
+<div class="section-container">
+  <table>
+    <thead>
+      <tr>
+        <th>월</th>
+        <th class="num">향수 수량</th>
+        <th class="num">향수 공급가</th>
+        <th class="num">디퓨저 수량</th>
+        <th class="num">디퓨저 공급가</th>
+        <th class="num">사쉐 수량</th>
+        <th class="num">사쉐 공급가</th>
+        <th class="num">시향지</th>
+        <th class="num">월 합계</th>
+      </tr>
+    </thead>
+    <tbody id="monthlyTable"></tbody>
+    <tfoot>
+      <tr class="subtotal-row" id="grandTotalRow"></tr>
+    </tfoot>
+  </table>
+</div>
+
+<!-- Perfume by variant -->
+<div class="section-title">🌸 향수 향별 판매 내역</div>
+<div class="section-container">
+  <div class="section-header">
+    <span class="dot" style="background: var(--perfume);"></span>
+    향수 30ml · 11개월 총 30개 · 단가 88,000원
+  </div>
+  <div class="variant-grid" id="perfumeVariants"></div>
+</div>
+
+<!-- Diffuser by variant -->
+<div class="section-container">
+  <div class="section-header">
+    <span class="dot" style="background: var(--diffuser);"></span>
+    디퓨저 720ml · 11개월 총 48개 · 단가 122,000원
+  </div>
+  <div class="variant-grid" id="diffuserVariants"></div>
+</div>
+
+<!-- Perfume monthly detail -->
+<div class="section-title">🔍 향수 월별 향별 상세</div>
+<div class="section-container">
+  <table id="perfumeMonthlyTable"></table>
+</div>
+
+<footer>
+  <span>아로필 × 대한음악사 · 11개월 실적 기반 가격 검증 자료</span>
+</footer>
+
+<script>
+const DATA = {
+  months: ["2025-05","2025-06","2025-07","2025-08","2025-09","2025-10","2025-11","2025-12","2026-01","2026-02","2026-03"],
+  monthly: {
+    "2025-05": {perfume: {qty:0, supply:0}, diffuser: {qty:4, supply:292800}, sachet: {qty:36, supply:388800}, tester: {qty:50, supply:30000}},
+    "2025-06": {perfume: {qty:5, supply:264000}, diffuser: {qty:6, supply:439200}, sachet: {qty:22, supply:237600}, tester: {qty:23, supply:13800}},
+    "2025-07": {perfume: {qty:3, supply:158400}, diffuser: {qty:8, supply:585600}, sachet: {qty:41, supply:442800}, tester: {qty:19, supply:11400}},
+    "2025-08": {perfume: {qty:3, supply:158400}, diffuser: {qty:6, supply:439200}, sachet: {qty:40, supply:432000}, tester: {qty:19, supply:11400}},
+    "2025-09": {perfume: {qty:1, supply:52800}, diffuser: {qty:1, supply:73200}, sachet: {qty:28, supply:302400}, tester: {qty:10, supply:6000}},
+    "2025-10": {perfume: {qty:1, supply:52800}, diffuser: {qty:8, supply:585600}, sachet: {qty:15, supply:162000}, tester: {qty:6, supply:3600}},
+    "2025-11": {perfume: {qty:2, supply:105600}, diffuser: {qty:2, supply:146400}, sachet: {qty:2, supply:21600}, tester: {qty:5, supply:3000}},
+    "2025-12": {perfume: {qty:3, supply:158400}, diffuser: {qty:2, supply:146400}, sachet: {qty:29, supply:313200}, tester: {qty:7, supply:4200}},
+    "2026-01": {perfume: {qty:5, supply:264000}, diffuser: {qty:1, supply:73200}, sachet: {qty:26, supply:280800}, tester: {qty:4, supply:2400}},
+    "2026-02": {perfume: {qty:4, supply:211200}, diffuser: {qty:5, supply:366000}, sachet: {qty:30, supply:324000}, tester: {qty:11, supply:6600}},
+    "2026-03": {perfume: {qty:3, supply:158400}, diffuser: {qty:5, supply:366000}, sachet: {qty:31, supply:334800}, tester: {qty:2, supply:1200}},
+  },
+  perfumeVariants: {
+    "화이트소피": 12, "블랙넘버투": 10, "레몬블라썸": 4, "오스만투스": 4
+  },
+  diffuserVariants: {
+    "레몬블라썸": 15, "바이올린우디": 14, "릴랙스앤포커스": 11, "블랙No.2": 5, "그린패스토래일": 3
+  },
+  perfumeMonthly: {
+    "2025-05": {}, "2025-06": {블랙넘버투:1, 오스만투스:1, 화이트소피:3},
+    "2025-07": {블랙넘버투:2, 화이트소피:1}, "2025-08": {오스만투스:1, 화이트소피:2},
+    "2025-09": {오스만투스:1}, "2025-10": {레몬블라썸:1},
+    "2025-11": {블랙넘버투:1, 화이트소피:1}, "2025-12": {블랙넘버투:1, 화이트소피:2},
+    "2026-01": {레몬블라썸:1, 블랙넘버투:2, 화이트소피:2}, "2026-02": {레몬블라썸:2, 블랙넘버투:2},
+    "2026-03": {블랙넘버투:1, 오스만투스:1, 화이트소피:1},
+  }
+};
+
+const UNIT = {
+  perfume: {supply: 52800, retail: 88000},
+  diffuser: {supply: 73200, retail: 122000},
+  sachet: {supply: 10800, retail: 18000},
+  tester: {supply: 600, retail: 1000},
+};
+
+function fmt(n) { return '₩' + Math.round(n).toLocaleString('ko-KR'); }
+function fmtQty(n) { return n.toLocaleString('ko-KR'); }
+
+// Summary Grid
+function renderSummary() {
+  let total = {perfume: {qty:0, supply:0}, diffuser: {qty:0, supply:0}, sachet: {qty:0, supply:0}, tester: {qty:0, supply:0}};
+  DATA.months.forEach(m => {
+    Object.keys(total).forEach(cat => {
+      total[cat].qty += DATA.monthly[m][cat].qty;
+      total[cat].supply += DATA.monthly[m][cat].supply;
+    });
+  });
+  const grandSupply = total.perfume.supply + total.diffuser.supply + total.sachet.supply + total.tester.supply;
+  const grandRetail = total.perfume.qty * UNIT.perfume.retail + total.diffuser.qty * UNIT.diffuser.retail + total.sachet.qty * UNIT.sachet.retail + total.tester.qty * UNIT.tester.retail;
+
+  const avgPerfume = (total.perfume.qty / 11).toFixed(1);
+  const avgDiffuser = (total.diffuser.qty / 11).toFixed(1);
+  const avgSachet = (total.sachet.qty / 11).toFixed(1);
+
+  document.getElementById('summaryGrid').innerHTML = `
+    <div class="summary-card perfume">
+      <div class="summary-label">향수 · Perfume</div>
+      <div class="summary-qty">${total.perfume.qty}<span class="unit">개</span></div>
+      <div class="summary-value">${fmt(total.perfume.supply)} <span style="font-size:0.72rem; color:var(--text-dim);">(공급가)</span></div>
+      <div class="summary-sub">월 평균 ${avgPerfume}개</div>
+    </div>
+    <div class="summary-card diffuser">
+      <div class="summary-label">디퓨저 · Diffuser</div>
+      <div class="summary-qty">${total.diffuser.qty}<span class="unit">개</span></div>
+      <div class="summary-value">${fmt(total.diffuser.supply)} <span style="font-size:0.72rem; color:var(--text-dim);">(공급가)</span></div>
+      <div class="summary-sub">월 평균 ${avgDiffuser}개</div>
+    </div>
+    <div class="summary-card sachet">
+      <div class="summary-label">사쉐 · Sachet</div>
+      <div class="summary-qty">${total.sachet.qty}<span class="unit">개</span></div>
+      <div class="summary-value">${fmt(total.sachet.supply)} <span style="font-size:0.72rem; color:var(--text-dim);">(공급가)</span></div>
+      <div class="summary-sub">월 평균 ${avgSachet}개</div>
+    </div>
+    <div class="summary-card total">
+      <div class="summary-label">전체 합계 · Total</div>
+      <div class="summary-qty">${fmtQty(total.perfume.qty + total.diffuser.qty + total.sachet.qty)}<span class="unit">개</span></div>
+      <div class="summary-value">${fmt(grandSupply)} <span style="font-size:0.72rem; color:var(--text-dim);">(공급가)</span></div>
+      <div class="summary-sub">소비자가 ${fmt(grandRetail)}</div>
+    </div>
+  `;
+}
+
+// Stacked bar chart
+function renderChart() {
+  const canvas = document.getElementById('chartCanvas');
+  const maxTotal = Math.max(...DATA.months.map(m => {
+    const d = DATA.monthly[m];
+    return d.perfume.supply + d.diffuser.supply + d.sachet.supply + d.tester.supply;
+  }));
+  // Round up to nice number
+  const yMax = Math.ceil(maxTotal / 100000) * 100000;
+
+  // Y-axis
+  const yAxis = document.createElement('div');
+  yAxis.className = 'chart-y-axis';
+  const steps = 5;
+  for (let i = 0; i <= steps; i++) {
+    const val = (yMax / steps) * i;
+    const tick = document.createElement('div');
+    tick.textContent = (val / 10000).toFixed(0) + '만';
+    yAxis.appendChild(tick);
+  }
+  canvas.appendChild(yAxis);
+
+  // Bars
+  DATA.months.forEach(m => {
+    const d = DATA.monthly[m];
+    const total = d.perfume.supply + d.diffuser.supply + d.sachet.supply + d.tester.supply;
+    const stack = document.createElement('div');
+    stack.className = 'chart-bar-stack';
+
+    const totalLabel = document.createElement('div');
+    totalLabel.className = 'chart-bar-total';
+    totalLabel.textContent = (total / 10000).toFixed(0) + '만';
+    stack.appendChild(totalLabel);
+
+    ['tester','sachet','diffuser','perfume'].forEach(cat => {
+      const bar = document.createElement('div');
+      bar.className = 'chart-bar';
+      const h = (d[cat].supply / yMax) * 240;
+      bar.style.height = h + 'px';
+      bar.style.background = `var(--${cat})`;
+      bar.title = `${cat}: ${d[cat].qty}개 · ${fmt(d[cat].supply)}`;
+      stack.appendChild(bar);
+    });
+
+    const label = document.createElement('div');
+    label.className = 'chart-bar-label';
+    label.textContent = m.slice(2).replace('-','/');
+    stack.appendChild(label);
+
+    canvas.appendChild(stack);
+  });
+}
+
+// Monthly table
+function renderMonthlyTable() {
+  const tbody = document.getElementById('monthlyTable');
+  let grandTotal = {pq:0, ps:0, dq:0, ds:0, sq:0, ss:0, tq:0, ts:0, total:0};
+  DATA.months.forEach(m => {
+    const d = DATA.monthly[m];
+    const monthTotal = d.perfume.supply + d.diffuser.supply + d.sachet.supply + d.tester.supply;
+    grandTotal.pq += d.perfume.qty; grandTotal.ps += d.perfume.supply;
+    grandTotal.dq += d.diffuser.qty; grandTotal.ds += d.diffuser.supply;
+    grandTotal.sq += d.sachet.qty; grandTotal.ss += d.sachet.supply;
+    grandTotal.tq += d.tester.qty; grandTotal.ts += d.tester.supply;
+    grandTotal.total += monthTotal;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="month-cell">${m}</td>
+      <td class="num qty-cell ${d.perfume.qty===0?'zero':''}">${d.perfume.qty}</td>
+      <td class="num value-cell">${fmt(d.perfume.supply)}</td>
+      <td class="num qty-cell ${d.diffuser.qty===0?'zero':''}">${d.diffuser.qty}</td>
+      <td class="num value-cell">${fmt(d.diffuser.supply)}</td>
+      <td class="num qty-cell ${d.sachet.qty===0?'zero':''}">${d.sachet.qty}</td>
+      <td class="num value-cell">${fmt(d.sachet.supply)}</td>
+      <td class="num qty-cell">${d.tester.qty}</td>
+      <td class="num value-cell"><strong>${fmt(monthTotal)}</strong></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('grandTotalRow').innerHTML = `
+    <td>합계 (11개월)</td>
+    <td class="num">${grandTotal.pq}</td>
+    <td class="num">${fmt(grandTotal.ps)}</td>
+    <td class="num">${grandTotal.dq}</td>
+    <td class="num">${fmt(grandTotal.ds)}</td>
+    <td class="num">${grandTotal.sq}</td>
+    <td class="num">${fmt(grandTotal.ss)}</td>
+    <td class="num">${grandTotal.tq}</td>
+    <td class="num">${fmt(grandTotal.total)}</td>
+  `;
+}
+
+// Variant grids
+function renderVariants() {
+  const pTotal = Object.values(DATA.perfumeVariants).reduce((a,b)=>a+b,0);
+  const dTotal = Object.values(DATA.diffuserVariants).reduce((a,b)=>a+b,0);
+
+  const pGrid = document.getElementById('perfumeVariants');
+  Object.entries(DATA.perfumeVariants).sort((a,b)=>b[1]-a[1]).forEach(([name, qty]) => {
+    const card = document.createElement('div');
+    card.className = 'variant-card';
+    card.innerHTML = `
+      <div class="variant-name">${name}</div>
+      <div class="variant-qty">${qty}<span style="font-size:0.72rem; color:var(--text-dim); font-weight:400;">개</span></div>
+      <div class="variant-share">${((qty/pTotal)*100).toFixed(1)}% · ${fmt(qty*88000)}</div>
+    `;
+    pGrid.appendChild(card);
+  });
+
+  const dGrid = document.getElementById('diffuserVariants');
+  Object.entries(DATA.diffuserVariants).sort((a,b)=>b[1]-a[1]).forEach(([name, qty]) => {
+    const card = document.createElement('div');
+    card.className = 'variant-card';
+    card.innerHTML = `
+      <div class="variant-name">${name}</div>
+      <div class="variant-qty">${qty}<span style="font-size:0.72rem; color:var(--text-dim); font-weight:400;">개</span></div>
+      <div class="variant-share">${((qty/dTotal)*100).toFixed(1)}% · ${fmt(qty*122000)}</div>
+    `;
+    dGrid.appendChild(card);
+  });
+}
+
+// Perfume monthly variant table
+function renderPerfumeMonthly() {
+  const table = document.getElementById('perfumeMonthlyTable');
+  const variants = ["화이트소피","블랙넘버투","레몬블라썸","오스만투스"];
+
+  let html = '<thead><tr><th>월</th>';
+  variants.forEach(v => html += `<th class="num">${v}</th>`);
+  html += '<th class="num">월 합계</th></tr></thead><tbody>';
+
+  let totals = {}; variants.forEach(v => totals[v] = 0);
+  let grandTotal = 0;
+
+  DATA.months.forEach(m => {
+    const row = DATA.perfumeMonthly[m] || {};
+    let monthSum = 0;
+    html += `<tr><td class="month-cell">${m}</td>`;
+    variants.forEach(v => {
+      const q = row[v] || 0;
+      monthSum += q;
+      totals[v] += q;
+      html += `<td class="num ${q===0?'qty-cell zero':'qty-cell'}">${q || '-'}</td>`;
+    });
+    grandTotal += monthSum;
+    html += `<td class="num value-cell"><strong>${monthSum}</strong></td></tr>`;
+  });
+
+  html += '</tbody><tfoot><tr class="subtotal-row"><td>합계</td>';
+  variants.forEach(v => html += `<td class="num">${totals[v]}</td>`);
+  html += `<td class="num"><strong>${grandTotal}</strong></td></tr></tfoot>`;
+
+  table.innerHTML = html;
+}
+
+renderSummary();
+renderChart();
+renderMonthlyTable();
+renderVariants();
+renderPerfumeMonthly();
+</script>
+
+</body>
+</html>
